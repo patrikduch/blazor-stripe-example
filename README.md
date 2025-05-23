@@ -10,8 +10,8 @@
 ### 1. **Clone the repo**
 
 ```bash
-git clone https://github.com/patrikduch/blazor-echarts-example.git
-cd blazor-echarts-example
+git clone https://github.com/patrikduch/blazor-stripe-example.git
+cd blazor-stripe-example
 ```
 
 
