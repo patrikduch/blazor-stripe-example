@@ -11,6 +11,9 @@ public class Program
         // Add services to the container.
         builder.Services.AddRazorComponents();
 
+        // Combination Blazor + Web API
+        builder.Services.AddControllers();
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -27,6 +30,7 @@ public class Program
         app.UseAntiforgery();
 
         app.MapRazorComponents<App>();
+        app.MapControllers(); // Applying Blazor App + API
 
         app.Run();
     }
