@@ -1,0 +1,42 @@
+# Build results
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ASP.NET Core secrets
+secrets.json
+
+# Publish directory
+wwwroot/dist/
+wwwroot/node_modules/
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# Dependency directories
+node_modules/
+bower_components/
+
+# Log files
+*.log
+
+# Environment files
+appsettings.Development.json
+.env
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# dotnet watch artifacts
+**/Properties/launchSettings.json
+
+# GitHub actions cache
+.github/workflows/*.cache
