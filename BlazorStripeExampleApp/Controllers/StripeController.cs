@@ -1,5 +1,7 @@
 ﻿namespace BlazorStripeExample.Controllers;
 
+using BlazorStripeExample.Contexts;
+using BlazorStripeExample.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Stripe;
@@ -13,10 +15,13 @@ public class StripeController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<StripeController> _logger;
 
-    public StripeController(IConfiguration configuration, ILogger<StripeController> logger)
+    private readonly AppDbContext _db;
+
+    public StripeController(IConfiguration configuration, ILogger<StripeController> logger, AppDbContext db)
     {
         _configuration = configuration;
         _logger = logger;
+        _db = db;
     }
 
     [HttpGet("test")]
@@ -97,7 +102,20 @@ public class StripeController : ControllerBase
             {
                 var session = stripeEvent.Data.Object as Session;
                 _logger.LogInformation("💰 Payment successful for session: {SessionId}", session?.Id);
-                // TODO: Add post-payment logic here
+
+                if (session != null)
+                {
+                    var payment = new Payment
+                    {
+                        SessionId = session.Id,
+                        CustomerEmail = session.CustomerDetails?.Email ?? "unknown",
+                        AmountTotal = session.AmountTotal ?? 0,
+                        Currency = session.Currency ?? "usd"
+                    };
+
+                    _db.Payments.Add(payment);
+                    await _db.SaveChangesAsync();
+                }
             }
 
             return Ok();
