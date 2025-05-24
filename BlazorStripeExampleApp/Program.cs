@@ -1,5 +1,8 @@
 ﻿using BlazorStripeExample.Components;
+using BlazorStripeExample.Contexts;
 using BlazorStripeExample.Models.Settings;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Stripe;
 
 namespace BlazorStripeExample;
@@ -25,6 +28,16 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            options.ListenAnyIP(5000); // HTTP
+            options.ListenAnyIP(7229, listenOptions => listenOptions.UseHttps()); // HTTPS
+        });
+
+        builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
         var app = builder.Build();
 
@@ -58,6 +71,22 @@ public class Program
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "BlazorStripeExample API v1");
             });
         }
+
+
+        app.MapGet("/health", async ([FromServices] AppDbContext db) =>
+        {
+            try
+            {
+                var canConnect = await db.Database.CanConnectAsync();
+                return canConnect
+                    ? Results.Ok("Database connection is healthy ✅")
+                    : Results.Problem("Database connection failed ❌");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Database health check threw an exception ❌: {ex.Message}");
+            }
+        });
 
         app.Run();
     }
