@@ -1,4 +1,6 @@
-using BlazorStripeExample.Components;
+﻿using BlazorStripeExample.Components;
+using BlazorStripeExample.Models.Settings;
+using Stripe;
 
 namespace BlazorStripeExample;
 
@@ -8,13 +10,25 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Add Stripe configuration from appsettings
+        builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+
+
         // Add services to the container.
-        builder.Services.AddRazorComponents();
+
+        builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents(); // ✅ Register interactive server components
 
         // Combination Blazor + Web API
         builder.Services.AddControllers();
 
+        builder.Services.AddHttpClient();
+
         var app = builder.Build();
+
+        // Set Stripe API key
+        var stripeSettings = app.Services.GetRequiredService<IConfiguration>().GetSection("Stripe").Get<StripeSettings>();
+        StripeConfiguration.ApiKey = stripeSettings.SecretKey;
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())
@@ -29,7 +43,9 @@ public class Program
         app.UseStaticFiles();
         app.UseAntiforgery();
 
-        app.MapRazorComponents<App>();
+        // 🔥 Add interactive render mode for components
+        app.MapRazorComponents<App>()
+            .AddInteractiveServerRenderMode();
         app.MapControllers(); // Applying Blazor App + API
 
         app.Run();

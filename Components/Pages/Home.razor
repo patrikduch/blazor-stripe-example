@@ -1,7 +1,44 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+
+@inject IHttpClientFactory HttpClientFactory
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
+<p>Welcome to your new app.</p>
 
-Welcome to your new app.
+<button class="btn btn-primary" @onclick="PayPatrikDuch">Pay Patrik Duch</button>
+
+@code {
+    private async Task PayPatrikDuch()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+            var baseUri = Nav.BaseUri;
+            var response = await client.PostAsync($"{baseUri}api/stripe/create-checkout-session", null);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadFromJsonAsync<StripeSessionResponse>();
+
+            if (!string.IsNullOrEmpty(json?.SessionId))
+            {
+                var publishableKey = Configuration["Stripe:PublishableKey"];
+                _ = JS.InvokeVoidAsync("redirectToCheckout", json.SessionId, publishableKey); // 🔥 fire-and-forget
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Payment error: {ex.Message}");
+        }
+    }
+
+    public class StripeSessionResponse
+    {
+        public string SessionId { get; set; } = string.Empty;
+    }
+}
