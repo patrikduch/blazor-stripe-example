@@ -21,8 +21,10 @@ public class Program
 
         // Combination Blazor + Web API
         builder.Services.AddControllers();
-
         builder.Services.AddHttpClient();
+
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
 
         var app = builder.Build();
 
@@ -47,6 +49,15 @@ public class Program
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
         app.MapControllers(); // Applying Blazor App + API
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "BlazorStripeExample API v1");
+            });
+        }
 
         app.Run();
     }
