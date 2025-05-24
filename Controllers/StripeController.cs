@@ -1,15 +1,28 @@
 ﻿namespace BlazorStripeExample.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Stripe;
+using Stripe.Checkout;
+using System.IO;
 
 [Route("api/[controller]")]
 [ApiController]
 public class StripeController : ControllerBase
 {
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<StripeController> _logger;
+
+    public StripeController(IConfiguration configuration, ILogger<StripeController> logger)
+    {
+        _configuration = configuration;
+        _logger = logger;
+    }
+
     [HttpGet("test")]
     public IActionResult GetTest()
     {
+        _logger.LogInformation("Stripe test endpoint hit.");
         return Ok("Stripe test endpoint is working.");
     }
 
@@ -18,22 +31,21 @@ public class StripeController : ControllerBase
     {
         try
         {
-            // ✅ Build base URL from request (e.g., https://localhost:7229)
             var request = HttpContext.Request;
             var baseUrl = $"{request.Scheme}://{request.Host}";
 
-            var options = new Stripe.Checkout.SessionCreateOptions
+            var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = new List<string> { "card" },
-                LineItems = new List<Stripe.Checkout.SessionLineItemOptions>
+                LineItems = new List<SessionLineItemOptions>
                 {
-                    new Stripe.Checkout.SessionLineItemOptions
+                    new SessionLineItemOptions
                     {
-                        PriceData = new Stripe.Checkout.SessionLineItemPriceDataOptions
+                        PriceData = new SessionLineItemPriceDataOptions
                         {
-                            UnitAmount = 5000, // $50.00 in cents
+                            UnitAmount = 5000,
                             Currency = "usd",
-                            ProductData = new Stripe.Checkout.SessionLineItemPriceDataProductDataOptions
+                            ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
                                 Name = "Test Product",
                             },
@@ -46,20 +58,54 @@ public class StripeController : ControllerBase
                 CancelUrl = $"{baseUrl}/cancel",
             };
 
-            var service = new Stripe.Checkout.SessionService();
+            var service = new SessionService();
             var session = await service.CreateAsync(options);
+
+            _logger.LogInformation("Checkout session created with ID: {SessionId}", session.Id);
 
             return Ok(new { sessionId = session.Id });
         }
         catch (StripeException stripeEx)
         {
-            Console.WriteLine($"Stripe error: {stripeEx.Message}");
+            _logger.LogError(stripeEx, "Stripe error occurred while creating session.");
             return StatusCode(500, new { error = "Stripe error occurred", detail = stripeEx.Message });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            _logger.LogError(ex, "Unexpected error occurred.");
             return StatusCode(500, new { error = "Internal server error", detail = ex.Message });
+        }
+    }
+
+    [HttpPost("webhook")]
+    public async Task<IActionResult> StripeWebhook()
+    {
+        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+        var endpointSecret = _configuration["Stripe:WebhookSecret"];
+
+        try
+        {
+            var stripeEvent = EventUtility.ConstructEvent(
+                json,
+                Request.Headers["Stripe-Signature"],
+                endpointSecret
+            );
+
+            _logger.LogInformation("Received Stripe event of type: {EventType}", stripeEvent.Type);
+
+            if (stripeEvent.Type == "checkout.session.completed")
+            {
+                var session = stripeEvent.Data.Object as Session;
+                _logger.LogInformation("💰 Payment successful for session: {SessionId}", session?.Id);
+                // TODO: Add post-payment logic here
+            }
+
+            return Ok();
+        }
+        catch (StripeException e)
+        {
+            _logger.LogWarning(e, "Stripe exception during webhook handling.");
+            return BadRequest();
         }
     }
 }
