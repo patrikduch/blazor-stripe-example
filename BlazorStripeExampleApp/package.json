@@ -1,0 +1,20 @@
+{
+  "name": "blazorstripeexampleapp",
+  "version": "1.0.0",
+  "description": "```bash\r git clone https://github.com/patrikduch/blazor-stripe-example.git\r cd blazor-stripe-example\r ```",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+     "init:tailwind": "powershell ./node_modules/.bin/tailwindcss.cmd init -p",
+     "build:css": "powershell ./node_modules/.bin/tailwindcss.cmd -i ./tailwind.css -o ./wwwroot/css/site.css --minify",
+     "dev": "powershell ./node_modules/.bin/tailwindcss.cmd -i ./tailwind.css -o ./wwwroot/css/site.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.1"
+  }
+}
