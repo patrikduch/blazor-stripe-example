@@ -32,8 +32,6 @@ appsettings.Development.json
 *.log
 
 # Ignore Docker-related artifacts
-docker-compose.override.yml
-docker-compose.*
 *.env
 .dockerignore
 
