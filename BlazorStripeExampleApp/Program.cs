@@ -1,11 +1,11 @@
-﻿using BlazorStripeExample.Components;
+﻿namespace BlazorStripeExample;
+
+using BlazorStripeExample.Components;
 using BlazorStripeExample.Contexts;
 using BlazorStripeExample.Models.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
-
-namespace BlazorStripeExample;
 
 public class Program
 {
@@ -16,11 +16,9 @@ public class Program
         // Add Stripe configuration from appsettings
         builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
 
-
         // Add services to the container.
-
         builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents(); // ✅ Register interactive server components
+            .AddInteractiveServerComponents(); // ✅ Register interactive server components
 
         // Combination Blazor + Web API
         builder.Services.AddControllers();
@@ -36,7 +34,7 @@ public class Program
         });
 
         builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
         var app = builder.Build();
@@ -58,9 +56,9 @@ public class Program
         app.UseStaticFiles();
         app.UseAntiforgery();
 
-        // 🔥 Add interactive render mode for components
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
+
         app.MapControllers(); // Applying Blazor App + API
 
         if (app.Environment.IsDevelopment())
