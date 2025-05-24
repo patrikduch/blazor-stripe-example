@@ -1,42 +1,56 @@
-# Build results
+# Ignore build output
 bin/
 obj/
-.vs/
+*.dll
+*.exe
+
+# Ignore user-specific files
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
 
-# ASP.NET Core secrets
-secrets.json
+# Ignore Visual Studio settings
+.vs/
+.vscode/
+*.vcxproj.user
 
-# Publish directory
-wwwroot/dist/
-wwwroot/node_modules/
-
-# Rider
+# Ignore Rider/JetBrains
 .idea/
 
-# VS Code
-.vscode/
-
-# Dependency directories
-node_modules/
-bower_components/
-
-# Log files
-*.log
-
-# Environment files
-appsettings.Development.json
-.env
-
-# OS-specific
+# OS-generated files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
 
-# dotnet watch artifacts
-**/Properties/launchSettings.json
+# ASP.NET Core configuration
+secrets.json
+appsettings.Development.json
 
-# GitHub actions cache
-.github/workflows/*.cache
+# Ignore log and debug files
+*.log
+
+# Ignore Docker-related artifacts
+docker-compose.override.yml
+docker-compose.*
+*.env
+.dockerignore
+
+# EF Core artifacts (optional)
+Migrations/
+
+# Coverage/test output
+TestResults/
+coverage/
+*.coverage
+
+# Ignore Razor build artifacts
+*.g.cs
+*.g.cshtml.cs
+
+# Ignore temp/generated files
+*.db
+*.pid
+*.lock.json
+*.vsix
