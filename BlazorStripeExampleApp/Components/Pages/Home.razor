@@ -8,16 +8,40 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
-<p>Welcome to your new app.</p>
+<div class="flex justify-center bg-gray-50 px-4 pt-16 pb-24">
+    <div class="bg-white shadow-xl rounded-2xl p-10 max-w-xl w-full text-center">
+        <h1 class="text-4xl font-extrabold text-blue-600 mb-4">Hello, world!</h1>
+        <p class="text-gray-700 text-lg mb-6">Welcome to your new app. You can try the payment flow below.</p>
 
-<button class="btn btn-primary" @onclick="PayPatrikDuch">Pay Patrik Duch</button>
+        @if (isProcessing)
+        {
+            <button class="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold cursor-not-allowed opacity-75 flex items-center justify-center gap-2 w-full max-w-xs mx-auto" disabled>
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                    <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Please wait...
+            </button>
+        }
+        else
+        {
+            <button @onclick="PayPatrikDuch"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full transition duration-200">
+                Pay Patrik Duch
+            </button>
+        }
+    </div>
+</div>
 
 @code {
+    private bool isProcessing = false;
+
     private async Task PayPatrikDuch()
     {
         try
         {
+            isProcessing = true;
             var client = HttpClientFactory.CreateClient();
             var baseUri = Nav.BaseUri;
             var response = await client.PostAsync($"{baseUri}api/stripe/create-checkout-session", null);
@@ -28,12 +52,13 @@
             if (!string.IsNullOrEmpty(json?.SessionId))
             {
                 var publishableKey = Configuration["Stripe:PublishableKey"];
-                _ = JS.InvokeVoidAsync("redirectToCheckout", json.SessionId, publishableKey); // 🔥 fire-and-forget
+                _ = JS.InvokeVoidAsync("redirectToCheckout", json.SessionId, publishableKey);
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Payment error: {ex.Message}");
+            isProcessing = false;
         }
     }
 
