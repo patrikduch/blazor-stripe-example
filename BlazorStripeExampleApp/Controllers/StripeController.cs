@@ -18,7 +18,6 @@ public class StripeController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<StripeController> _logger;
     private readonly StripeSettings _stripeSettings;
-
     private readonly AppDbContext _db;
 
     public StripeController(IConfiguration configuration, ILogger<StripeController> logger, IOptions<StripeSettings> stripeSettings, AppDbContext db)
