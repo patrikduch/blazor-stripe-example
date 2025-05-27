@@ -1,30 +1,32 @@
-# Unter https://aka.ms/customizecontainer erfahren Sie, wie Sie Ihren Debugcontainer anpassen und wie Visual Studio dieses Dockerfile verwendet, um Ihre Images für ein schnelleres Debuggen zu erstellen.
-
-# Diese Stufe wird verwendet, wenn sie von VS im Schnellmodus ausgeführt wird (Standardeinstellung für Debugkonfiguration).
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
-
-
-# Diese Stufe wird zum Erstellen des Dienstprojekts verwendet.
+# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copy project and restore
 COPY ["BlazorStripeExampleApp/BlazorStripeExample.csproj", "BlazorStripeExampleApp/"]
 RUN dotnet restore "./BlazorStripeExampleApp/BlazorStripeExample.csproj"
+
+# Copy everything and build
 COPY . .
 WORKDIR "/src/BlazorStripeExampleApp"
 RUN dotnet build "./BlazorStripeExample.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Diese Stufe wird verwendet, um das Dienstprojekt zu veröffentlichen, das in die letzte Phase kopiert werden soll.
+# Publish stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./BlazorStripeExample.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# Diese Stufe wird in der Produktion oder bei Ausführung von VS im regulären Modus verwendet (Standard, wenn die Debugkonfiguration nicht verwendet wird).
-FROM base AS final
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+
+# ✅ Set port to 80 and expose it
+EXPOSE 80
+ENV ASPNETCORE_URLS=http://+:80
+
+# Copy published app
 COPY --from=publish /app/publish .
+
+# ✅ Use correct DLL name
 ENTRYPOINT ["dotnet", "BlazorStripeExample.dll"]
