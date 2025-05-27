@@ -57,7 +57,14 @@
             isProcessing = true;
             var client = HttpClientFactory.CreateClient();
             var baseUri = Nav.BaseUri;
-            var response = await client.PostAsync($"{baseUri}api/stripe/create-checkout-session", null);
+
+            // Set request body
+            var payload = new
+            {
+                billingInterval = "monthly" // or "yearly" based on UI selection
+            };
+
+            var response = await client.PostAsJsonAsync($"{baseUri}api/stripe/create-checkout-session", payload);
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadFromJsonAsync<StripeSessionResponse>();

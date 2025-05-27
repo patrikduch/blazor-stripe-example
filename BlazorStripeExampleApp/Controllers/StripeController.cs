@@ -2,8 +2,11 @@
 
 using BlazorStripeExample.Contexts;
 using BlazorStripeExample.Entities;
+using BlazorStripeExample.Models.Requests;
+using BlazorStripeExample.Models.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
 using System.IO;
@@ -14,14 +17,16 @@ public class StripeController : ControllerBase
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<StripeController> _logger;
+    private readonly StripeSettings _stripeSettings;
 
     private readonly AppDbContext _db;
 
-    public StripeController(IConfiguration configuration, ILogger<StripeController> logger, AppDbContext db)
+    public StripeController(IConfiguration configuration, ILogger<StripeController> logger, IOptions<StripeSettings> stripeSettings, AppDbContext db)
     {
         _configuration = configuration;
         _logger = logger;
         _db = db;
+        _stripeSettings = stripeSettings.Value;
     }
 
     [HttpGet("test")]
@@ -32,10 +37,17 @@ public class StripeController : ControllerBase
     }
 
     [HttpPost("create-checkout-session")]
-    public async Task<IActionResult> CreateCheckoutSession()
+    public async Task<IActionResult> CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest requestDto)
     {
         try
         {
+            var priceId = requestDto.BillingInterval.ToLower() switch
+            {
+                "monthly" => _stripeSettings.BasicMonthlyPriceId,
+                "yearly" => _stripeSettings.BasicYearlyPriceId,
+                _ => throw new ArgumentException("Invalid billing interval. Use 'monthly' or 'yearly'.")
+            };
+
             var request = HttpContext.Request;
             var baseUrl = $"{request.Scheme}://{request.Host}";
 
@@ -43,31 +55,22 @@ public class StripeController : ControllerBase
             {
                 PaymentMethodTypes = new List<string> { "card" },
                 LineItems = new List<SessionLineItemOptions>
+            {
+                new SessionLineItemOptions
                 {
-                    new SessionLineItemOptions
-                    {
-                        PriceData = new SessionLineItemPriceDataOptions
-                        {
-                            UnitAmount = 5000,
-                            Currency = "usd",
-                            ProductData = new SessionLineItemPriceDataProductDataOptions
-                            {
-                                Name = "Test Product",
-                            },
-                        },
-                        Quantity = 1,
-                    },
-                },
-                Mode = "payment",
-                SuccessUrl = $"{baseUrl}/success",
-                CancelUrl = $"{baseUrl}/cancel",
+                    Price = priceId,
+                    Quantity = 1
+                }
+            },
+                Mode = "subscription",
+                SuccessUrl = $"{baseUrl}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{baseUrl}/cancel"
             };
 
             var service = new SessionService();
             var session = await service.CreateAsync(options);
 
             _logger.LogInformation("Checkout session created with ID: {SessionId}", session.Id);
-
             return Ok(new { sessionId = session.Id });
         }
         catch (StripeException stripeEx)
@@ -81,6 +84,7 @@ public class StripeController : ControllerBase
             return StatusCode(500, new { error = "Internal server error", detail = ex.Message });
         }
     }
+
 
     [HttpPost("webhook")]
     public async Task<IActionResult> StripeWebhook()
