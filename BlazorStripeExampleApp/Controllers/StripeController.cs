@@ -28,13 +28,6 @@ public class StripeController : ControllerBase
         _stripeSettings = stripeSettings.Value;
     }
 
-    [HttpGet("test")]
-    public IActionResult GetTest()
-    {
-        _logger.LogInformation("Stripe test endpoint hit.");
-        return Ok("Stripe test endpoint is working.");
-    }
-
     [HttpPost("create-checkout-session")]
     public async Task<IActionResult> CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest requestDto)
     {
