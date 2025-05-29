@@ -94,23 +94,29 @@ public class StripeController : ControllerBase
 
             _logger.LogInformation("Received Stripe event of type: {EventType}", stripeEvent.Type);
 
-            if (stripeEvent.Type == "checkout.session.completed")
+            if (stripeEvent?.Type == EventTypes.InvoicePaymentSucceeded)
             {
-                var session = stripeEvent.Data.Object as Session;
-                _logger.LogInformation("💰 Payment successful for session: {SessionId}", session?.Id);
+                var invoice = stripeEvent.Data.Object as Invoice;
 
-                if (session != null)
+                if (invoice != null)
                 {
+                    decimal amount = invoice.AmountPaid / 100m;
+                    _logger.LogInformation("✅ Subscription paid: {Amount} {Currency}", amount, invoice.Currency?.ToUpper());
+
                     var payment = new Payment
                     {
-                        SessionId = session.Id,
-                        CustomerEmail = session.CustomerDetails?.Email ?? "unknown",
-                        AmountTotal = session.AmountTotal ?? 0,
-                        Currency = session.Currency ?? "usd"
+                        SessionId = invoice.Id,
+                        CustomerEmail = invoice.CustomerEmail ?? "unknown", // may be null, fallback if needed
+                        AmountTotal = amount,
+                        Currency = invoice.Currency ?? "usd"
                     };
 
                     _db.Payments.Add(payment);
                     await _db.SaveChangesAsync();
+                }
+                else
+                {
+                    _logger.LogWarning("📄 Stripe event was InvoicePaymentSucceeded, but the object could not be parsed as an Invoice.");
                 }
             }
 
