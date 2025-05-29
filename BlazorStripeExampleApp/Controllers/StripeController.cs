@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
+using Stripe.V2;
 using System.IO;
 
 [Route("api/[controller]")]
@@ -94,32 +95,31 @@ public class StripeController : ControllerBase
 
             _logger.LogInformation("Received Stripe event of type: {EventType}", stripeEvent.Type);
 
-            if (stripeEvent?.Type == EventTypes.InvoicePaymentSucceeded)
+            // Handle successful checkout session
+            if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
             {
-                var invoice = stripeEvent.Data.Object as Invoice;
+                var session = stripeEvent.Data.Object as Session;
 
-                if (invoice != null)
+                if (session != null)
                 {
-                    decimal amount = invoice.AmountPaid / 100m;
-                    _logger.LogInformation("✅ Subscription paid: {Amount} {Currency}", amount, invoice.Currency?.ToUpper());
+                    _logger.LogInformation("✅ Checkout session completed: {SessionId}", session.Id);
+
+                    long amount = (long)((session.AmountTotal ?? 0) / 100m);
 
                     var payment = new Payment
                     {
-                        SessionId = invoice.Id,
-                        CustomerEmail = invoice.CustomerEmail ?? "unknown", // may be null, fallback if needed
+                        SessionId = session.Id,
+                        CustomerEmail = session.CustomerDetails?.Email ?? "unknown",
                         AmountTotal = amount,
-                        Currency = invoice.Currency ?? "usd"
+                        Currency = session.Currency ?? "usd"
                     };
 
                     _db.Payments.Add(payment);
                     await _db.SaveChangesAsync();
                 }
-                else
-                {
-                    _logger.LogWarning("📄 Stripe event was InvoicePaymentSucceeded, but the object could not be parsed as an Invoice.");
-                }
             }
 
+    
             return Ok();
         }
         catch (StripeException e)
@@ -128,4 +128,5 @@ public class StripeController : ControllerBase
             return BadRequest();
         }
     }
+
 }
