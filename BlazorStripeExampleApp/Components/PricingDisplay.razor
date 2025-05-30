@@ -1,0 +1,37 @@
+﻿<div class="text-center mb-6">
+    <div class="text-3xl font-bold text-gray-800 mb-2">
+        $@GetPrice()
+        <span class="text-lg font-normal text-gray-500">
+            /@GetPeriodText()
+        </span>
+    </div>
+
+    @if (BillingInterval == "yearly")
+    {
+        <div class="text-sm text-gray-600">
+            <span class="line-through">$@(MonthlyPrice * 12)</span>
+            <span class="text-green-600 font-medium ml-2">Save $@GetSavingsAmount()</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string BillingInterval { get; set; } = "monthly";
+    [Parameter] public decimal MonthlyPrice { get; set; } = 29;
+    [Parameter] public decimal YearlyPrice { get; set; } = 290;
+
+    private decimal GetPrice()
+    {
+        return BillingInterval == "yearly" ? YearlyPrice : MonthlyPrice;
+    }
+
+    private string GetPeriodText()
+    {
+        return BillingInterval == "yearly" ? "year" : "month";
+    }
+
+    private decimal GetSavingsAmount()
+    {
+        return (MonthlyPrice * 12) - YearlyPrice;
+    }
+}

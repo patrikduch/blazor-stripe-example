@@ -1,88 +1,46 @@
 ﻿@page "/"
-@using BlazorStripeExample.Models.Responses
 @rendermode InteractiveServer
-
-@inject IHttpClientFactory HttpClientFactory
-@inject IConfiguration Configuration
-@inject IJSRuntime JS
-@inject NavigationManager Nav
 
 <PageTitle>Home</PageTitle>
 
 <div class="flex justify-center items-start bg-gray-50 px-4 min-h-screen pt-24">
     <div class="bg-white shadow-xl rounded-2xl p-10 max-w-xl w-full text-center">
         <h1 class="text-4xl font-extrabold text-blue-600 mb-4">Hello, world!</h1>
-        <p class="text-gray-700 text-lg mb-6">
+        <p class="text-gray-700 text-lg mb-8">
             Welcome to your new app. You can try the payment flow below.
         </p>
 
-        @if (isProcessing)
-        {
-            <button disabled
-                    class="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold cursor-not-allowed opacity-75 flex items-center justify-center gap-2 w-full max-w-xs mx-auto">
-                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                    <path class="opacity-75" fill="currentColor"
-                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-                Please wait...
-            </button>
-        }
-        else
-        {
-            <button @onclick="PayPatrikDuch"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full transition duration-200 flex items-center justify-center gap-2 w-full max-w-xs mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke-width="1.5"
-                     stroke="currentColor"
-                     class="w-5 h-5">
-                    <path stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M2.25 6.75A2.25 2.25 0 014.5 4.5h15a2.25 2.25 0 012.25 2.25v1.5H2.25v-1.5zM2.25 9.75h19.5v7.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25v-7.5z" />
-                </svg>
-                Pay Patrik Duch
-            </button>
-        }
+        <BillingSwitcher @bind-SelectedInterval="selectedBillingInterval"
+                         SavingsText="@GetSavingsText()" />
+
+        <PayButton ButtonText="Pay Patrik Duch"
+                   BillingInterval="@selectedBillingInterval"
+                   OnPaymentStarted="HandlePaymentStarted"
+                   OnPaymentCompleted="HandlePaymentCompleted"
+                   OnPaymentError="HandlePaymentError" />
     </div>
 </div>
 
 @code {
-    private bool isProcessing = false;
+    private string selectedBillingInterval = "monthly";
 
-    private async Task PayPatrikDuch()
+    private string GetSavingsText()
     {
-        try
-        {
-            isProcessing = true;
-            var client = HttpClientFactory.CreateClient();
-            var baseUri = Nav.BaseUri;
+        return selectedBillingInterval == "yearly" ? "💰 Save 20% with yearly billing!" : "";
+    }
 
-            // Set request body
-            var payload = new
-            {
-                billingInterval = "monthly" // or "yearly" based on UI selection
-            };
+    private async Task HandlePaymentStarted()
+    {
+        Console.WriteLine($"Payment process started for {selectedBillingInterval} billing");
+    }
 
-            var response = await client.PostAsJsonAsync($"{baseUri}api/stripe/create-checkout-session", payload);
-            response.EnsureSuccessStatusCode();
+    private async Task HandlePaymentCompleted()
+    {
+        Console.WriteLine("Payment process completed");
+    }
 
-            var json = await response.Content.ReadFromJsonAsync<StripeSessionResponse>();
-
-            if (!string.IsNullOrEmpty(json?.SessionId))
-            {
-                var publishableKey = Configuration["Stripe:PublishableKey"];
-                await JS.InvokeVoidAsync("redirectToCheckout", json.SessionId, publishableKey);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Payment error: {ex.Message}");
-        }
-        finally
-        {
-            isProcessing = false;
-        }
+    private async Task HandlePaymentError(string errorMessage)
+    {
+        Console.WriteLine($"Payment error occurred: {errorMessage}");
     }
 }

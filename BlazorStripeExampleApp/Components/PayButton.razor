@@ -1,0 +1,95 @@
+﻿@inject IHttpClientFactory HttpClientFactory
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+@if (IsProcessing)
+{
+    <button disabled
+            class="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold cursor-not-allowed opacity-75 flex items-center justify-center gap-2 w-full max-w-xs mx-auto">
+        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+        Please wait...
+    </button>
+}
+else
+{
+    <button @onclick="HandlePayment"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full transition duration-200 flex items-center justify-center gap-2 w-full max-w-xs mx-auto">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke-width="1.5"
+             stroke="currentColor"
+             class="w-5 h-5">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.25 6.75A2.25 2.25 0 014.5 4.5h15a2.25 2.25 0 012.25 2.25v1.5H2.25v-1.5zM2.25 9.75h19.5v7.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25v-7.5z" />
+        </svg>
+        @ButtonText
+    </button>
+}
+
+@code {
+    [Parameter] public string ButtonText { get; set; } = "Pay Now";
+    [Parameter] public string BillingInterval { get; set; } = "monthly";
+    [Parameter] public EventCallback OnPaymentStarted { get; set; }
+    [Parameter] public EventCallback OnPaymentCompleted { get; set; }
+    [Parameter] public EventCallback<string> OnPaymentError { get; set; }
+
+    private bool _isProcessing = false;
+    [Parameter]
+    public bool IsProcessing
+    {
+        get => _isProcessing;
+        set
+        {
+            if (_isProcessing != value)
+            {
+                _isProcessing = value;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task HandlePayment()
+    {
+        try
+        {
+            IsProcessing = true;
+            await OnPaymentStarted.InvokeAsync();
+
+            var client = HttpClientFactory.CreateClient();
+            var baseUri = Nav.BaseUri;
+
+            var payload = new
+            {
+                billingInterval = BillingInterval
+            };
+
+            var response = await client.PostAsJsonAsync($"{baseUri}api/stripe/create-checkout-session", payload);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadFromJsonAsync<BlazorStripeExample.Models.Responses.StripeSessionResponse>();
+
+            if (!string.IsNullOrEmpty(json?.SessionId))
+            {
+                var publishableKey = Configuration["Stripe:PublishableKey"];
+                await JS.InvokeVoidAsync("redirectToCheckout", json.SessionId, publishableKey);
+                await OnPaymentCompleted.InvokeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Payment error: {ex.Message}");
+            await OnPaymentError.InvokeAsync(ex.Message);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+}

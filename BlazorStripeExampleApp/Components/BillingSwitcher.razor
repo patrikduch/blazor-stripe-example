@@ -1,0 +1,49 @@
+﻿@* BillingSwitcher.razor *@
+<div class="flex items-center justify-center mb-6">
+    <div class="bg-gray-100 rounded-full p-1 flex">
+        <button @onclick="@(() => SetInterval("monthly"))"
+                class="@GetButtonClass("monthly") px-4 py-2 rounded-full font-medium transition-all duration-200">
+            Monthly
+        </button>
+        <button @onclick="@(() => SetInterval("yearly"))"
+                class="@GetButtonClass("yearly") px-4 py-2 rounded-full font-medium transition-all duration-200">
+            Yearly
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(SavingsText))
+{
+    <div class="text-center mb-4">
+        <span class="text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-full">
+            @SavingsText
+        </span>
+    </div>
+}
+
+@code {
+    [Parameter] public string SelectedInterval { get; set; } = "monthly";
+    [Parameter] public EventCallback<string> SelectedIntervalChanged { get; set; }
+    [Parameter] public string SavingsText { get; set; } = "";
+
+    private async Task SetInterval(string interval)
+    {
+        if (SelectedInterval != interval)
+        {
+            SelectedInterval = interval;
+            await SelectedIntervalChanged.InvokeAsync(interval);
+        }
+    }
+
+    private string GetButtonClass(string interval)
+    {
+        var baseClass = "relative";
+
+        if (SelectedInterval == interval)
+        {
+            return $"{baseClass} bg-white text-blue-600 shadow-sm";
+        }
+
+        return $"{baseClass} text-gray-600 hover:text-gray-800";
+    }
+}
