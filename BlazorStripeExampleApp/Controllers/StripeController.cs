@@ -122,6 +122,7 @@ public class StripeController : ControllerBase
 
             _logger.LogInformation("Received Stripe event of type: {EventType}", stripeEvent.Type);
 
+ 
             if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
             {
                 var session = stripeEvent.Data.Object as Session;
