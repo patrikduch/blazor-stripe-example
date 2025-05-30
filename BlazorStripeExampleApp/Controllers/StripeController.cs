@@ -5,11 +5,11 @@ using BlazorStripeExample.Entities;
 using BlazorStripeExample.Models.Requests;
 using BlazorStripeExample.Models.Settings;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
-using Stripe.V2;
 using System.IO;
 
 [Route("api/[controller]")]
@@ -78,6 +78,33 @@ public class StripeController : ControllerBase
         }
     }
 
+    [HttpGet("confirmation")]
+    public async Task<IActionResult> GetPaymentConfirmation([FromQuery] string sessionId)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            return BadRequest(new { message = "Session ID is required." });
+        }
+
+        var payment = await _db.Payments.FirstOrDefaultAsync(p => p.SessionId == sessionId);
+
+        if (payment == null)
+        {
+            _logger.LogWarning("❌ No payment found for Session ID: {SessionId}", sessionId);
+            return NotFound(new { message = "Payment not found." });
+        }
+
+        _logger.LogInformation("✅ Payment found for Session ID: {SessionId}", sessionId);
+
+        return Ok(new
+        {
+            payment.SessionId,
+            payment.CustomerEmail,
+            Amount = payment.AmountTotal,
+            Currency = payment.Currency.ToUpper()
+        });
+    }
+
 
     [HttpPost("webhook")]
     public async Task<IActionResult> StripeWebhook()
@@ -95,7 +122,6 @@ public class StripeController : ControllerBase
 
             _logger.LogInformation("Received Stripe event of type: {EventType}", stripeEvent.Type);
 
-            // Handle successful checkout session
             if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
             {
                 var session = stripeEvent.Data.Object as Session;

@@ -1,16 +1,96 @@
 ﻿@page "/success"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+@using System.Globalization
 
 <div class="min-h-screen flex justify-center items-start px-4 pt-24">
     <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-        <div class="text-green-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-        </div>
-        <h3 class="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h3>
-        <p class="text-gray-600 mb-6">Thank you for your purchase. You can now access premium features.</p>
-        <a href="/" class="inline-block bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full transition duration-200">
-            Go to Home
-        </a>
+        @if (isLoading)
+        {
+            <p class="text-gray-500">Loading payment details...</p>
+        }
+        else if (!string.IsNullOrEmpty(error))
+        {
+            <div class="text-red-600 font-semibold">@error</div>
+        }
+        else if (payment is not null)
+        {
+            <div class="text-green-500 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h3>
+
+            <div class="text-gray-600 mb-4">
+                <p class="mb-2">Thank you, <strong>@payment.CustomerEmail</strong>.</p>
+                <p>You’ve been charged <strong>@FormatAmount(payment.Amount, payment.Currency)</strong>.</p>
+            </div>
+
+            <a href="/" class="inline-block bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full transition duration-200">
+                Go to Home
+            </a>
+        }
+        else
+        {
+            <p class="text-gray-500">Payment not found.</p>
+        }
     </div>
 </div>
+
+@code {
+    private string? sessionId;
+    private PaymentInfo? payment;
+    private bool isLoading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        sessionId = query.Get("session_id");
+
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            error = "Session ID not provided.";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var baseUri = Navigation.BaseUri;
+            var fullUrl = $"{baseUri}api/stripe/confirmation?sessionId={sessionId}";
+            payment = await Http.GetFromJsonAsync<PaymentInfo>(fullUrl);
+        }
+        catch (HttpRequestException)
+        {
+            error = "Failed to fetch payment information.";
+        }
+
+        isLoading = false;
+    }
+
+    private string FormatAmount(decimal amount, string currency)
+    {
+        var culture = currency.ToUpper() switch
+        {
+            "CZK" => new CultureInfo("cs-CZ"),
+            "USD" => new CultureInfo("en-US"),
+            "EUR" => new CultureInfo("de-DE"),
+            _ => CultureInfo.InvariantCulture
+        };
+
+        return string.Format(culture, "{0:C}", amount);
+    }
+
+    private class PaymentInfo
+    {
+        public string SessionId { get; set; } = string.Empty;
+        public string CustomerEmail { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string Currency { get; set; } = string.Empty;
+    }
+}
