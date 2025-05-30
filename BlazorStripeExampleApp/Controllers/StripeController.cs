@@ -146,7 +146,6 @@ public class StripeController : ControllerBase
                 }
             }
 
-    
             return Ok();
         }
         catch (StripeException e)
