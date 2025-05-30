@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using BlazorStripeExample.Models.Responses
 @rendermode InteractiveServer
 
 @inject IHttpClientFactory HttpClientFactory
@@ -83,10 +84,5 @@
         {
             isProcessing = false;
         }
-    }
-
-    public class StripeSessionResponse
-    {
-        public string SessionId { get; set; } = string.Empty;
     }
 }
