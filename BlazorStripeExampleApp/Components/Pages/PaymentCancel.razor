@@ -1,16 +1,76 @@
 ﻿@page "/cancel"
 
-<div class="min-h-screen flex justify-center items-start px-4 pt-24">
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-        <div class="text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+<div class="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+            <!-- Header -->
+            <div class="bg-red-50 p-8 flex flex-col items-center justify-center">
+                <div class="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                    <svg class="h-10 w-10 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Platba byla zrušena</h2>
+                <p class="text-center text-gray-600">Proces platby byl přerušen nebo zrušen.</p>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8">
+                <div class="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-100">
+                    <p class="text-gray-600 mb-8">
+                        Nemějte obavy! Z vašeho účtu nebyly strženy žádné prostředky.
+                    </p>
+                    <ul class="space-y-3 text-sm text-gray-500">
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Žádná platba neproběhla
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Vaše karta nebyla zatížena
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Můžete to zkusit znovu kdykoliv
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-col gap-3">
+                    <a href="/"
+                       class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 text-center flex items-center justify-center">
+                        <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Zpět na úvodní stránku
+                    </a>
+
+                    <a href="/pricing"
+                       class="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-lg transition duration-200 border border-gray-200 text-center flex items-center justify-center">
+                        <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38" />
+                        </svg>
+                        Zkusit znovu
+                    </a>
+                </div>
+            </div>
         </div>
-        <h3 class="text-2xl font-bold text-gray-800 mb-2">Payment Canceled</h3>
-        <p class="text-gray-600 mb-6">Your payment was not completed. You can try again or return to pricing.</p>
-        <a href="/" class="inline-block bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full transition duration-200">
-            Return to Home
-        </a>
+
+        <!-- Stripe Footer -->
+        <div class="text-center mt-8 text-sm text-gray-500">
+            <div>
+                Zajištěno pomocí <span class="font-semibold text-gray-700">Stripe</span>
+            </div>
+        </div>
     </div>
 </div>

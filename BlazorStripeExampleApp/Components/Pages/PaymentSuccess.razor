@@ -4,38 +4,97 @@
 
 @using System.Globalization
 
-<div class="min-h-screen flex justify-center items-start px-4 pt-24">
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
+<div class="min-h-screen bg-white flex items-center justify-center p-4">
+    <div class="w-full max-w-lg">
         @if (isLoading)
         {
-            <p class="text-gray-500">Loading payment details...</p>
+            <div class="text-center p-8">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+                <p class="mt-4 text-gray-600">Zpracováváme vaši platbu...</p>
+            </div>
         }
         else if (!string.IsNullOrEmpty(error))
         {
-            <div class="text-red-600 font-semibold">@error</div>
+            <div class="bg-red-50 rounded-xl p-8 text-center">
+                <div class="text-red-600 font-medium">@error</div>
+            </div>
         }
         else if (payment is not null)
         {
-            <div class="text-green-500 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <!-- Success Header -->
+                <div class="bg-green-50 py-8 px-4 text-center">
+                    <div class="@($"mx-auto transform transition-all duration-500 {(showCheckmark ? "scale-100" : "scale-0")}")">
+                        <div class="h-16 w-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
+                            <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    <h1 class="text-2xl font-semibold text-gray-900 mt-6">Platba byla úspěšná!</h1>
+                    <p class="text-gray-600 mt-2">Vaše platba byla úspěšně zpracována.</p>
+                </div>
+
+                <!-- Payment Details -->
+                <div class="@($"transition-opacity duration-500 {(showDetails ? "opacity-100" : "opacity-0")}")">
+                    <div class="p-6 space-y-6">
+                        <!-- Amount -->
+                        <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                            <span class="text-gray-600">Zaplacená částka</span>
+                            <span class="text-xl font-semibold text-gray-900">@FormatAmount(payment.Amount, payment.Currency)</span>
+                        </div>
+
+                        <!-- Other Details -->
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">E-mail</span>
+                                <span class="text-gray-900">@payment.CustomerEmail</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Způsob platby</span>
+                                <span class="text-gray-900">Platební karta</span>
+                            </div>
+
+                            @*
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">ID transakce</span>
+                                <code class="text-sm bg-gray-50 px-2 py-1 rounded text-gray-600">@payment.SessionId</code>
+                            </div> *@
+
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Datum</span>
+                                <span class="text-gray-900">@DateTime.Now.ToString("d. MMM yyyy HH:mm", new CultureInfo("cs-CZ"))</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="p-6 bg-gray-50 space-y-3">
+                        <a href="/" class="block w-full bg-green-500 hover:bg-green-600 text-white text-center py-3 px-4 rounded-lg transition-colors duration-200">
+                            Zpět na úvodní stránku
+                        </a>
+
+                        @*
+                        <button @onclick="DownloadReceipt"
+                                class="block w-full bg-white hover:bg-gray-50 text-gray-700 text-center py-3 px-4 rounded-lg border border-gray-200 transition-colors duration-200">
+                            Stáhnout potvrzení
+                        </button> *@
+                    </div>
+                </div>
             </div>
 
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h3>
-
-            <div class="text-gray-600 mb-4">
-                <p class="mb-2">Thank you, <strong>@payment.CustomerEmail</strong>.</p>
-                <p>You’ve been charged <strong>@FormatAmount(payment.Amount, payment.Currency)</strong>.</p>
+            <!-- Stripe Footer -->
+            <div class="text-center mt-8 text-sm text-gray-500">
+                <div>
+                    Zajištěno pomocí <span class="font-semibold text-gray-700">Stripe</span>
+                </div>
             </div>
-
-            <a href="/" class="inline-block bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full transition duration-200">
-                Go to Home
-            </a>
         }
         else
         {
-            <p class="text-gray-500">Payment not found.</p>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+                <p class="text-gray-600">Platba nebyla nalezena.</p>
+            </div>
         }
     </div>
 </div>
@@ -45,6 +104,8 @@
     private PaymentInfo? payment;
     private bool isLoading = true;
     private string? error;
+    private bool showCheckmark;
+    private bool showDetails;
 
     protected override async Task OnInitializedAsync()
     {
@@ -54,7 +115,7 @@
 
         if (string.IsNullOrWhiteSpace(sessionId))
         {
-            error = "Session ID not provided.";
+            error = "ID relace nebylo poskytnuto.";
             isLoading = false;
             return;
         }
@@ -64,10 +125,18 @@
             var baseUri = Navigation.BaseUri;
             var fullUrl = $"{baseUri}api/stripe/confirmation?sessionId={sessionId}";
             payment = await Http.GetFromJsonAsync<PaymentInfo>(fullUrl);
+
+            await Task.Delay(300);
+            showCheckmark = true;
+            StateHasChanged();
+
+            await Task.Delay(500);
+            showDetails = true;
+            StateHasChanged();
         }
         catch (HttpRequestException)
         {
-            error = "Failed to fetch payment information.";
+            error = "Nepodařilo se načíst informace o platbě.";
         }
 
         isLoading = false;
@@ -84,6 +153,12 @@
         };
 
         return string.Format(culture, "{0:C}", amount);
+    }
+
+    private async Task DownloadReceipt()
+    {
+        // Zde implementujte logiku pro stažení potvrzení
+        await Task.CompletedTask;
     }
 
     private class PaymentInfo
