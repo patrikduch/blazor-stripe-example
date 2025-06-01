@@ -35,30 +35,16 @@ public class StripeController : ControllerBase
     [HttpPost("create-checkout-session")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(object))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(object))]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(object))] 
-    public async Task<IActionResult> CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest requestDto)
+    public async Task<IActionResult> CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest dto)
     {
-        try
-        {
-            var request = HttpContext.Request;
-            var baseUrl = $"{request.Scheme}://{request.Host}";
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var result = await _stripeService.CreateCheckoutSessionAsync(dto.BillingInterval, baseUrl);
 
-            var sessionId = await _stripeService.CreateCheckoutSessionAsync(requestDto.BillingInterval, baseUrl);
+        if (result.Success)
+            return Ok(new { result.SessionId });
 
-            return Ok(new { sessionId });
-        }
-        catch (StripeException stripeEx)
-        {
-            _logger.LogError(stripeEx, "Stripe error occurred while creating session.");
-            return StatusCode(400, new { error = "Stripe error occurred", detail = stripeEx.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error occurred.");
-            return StatusCode(500, new { error = "Internal server error", detail = ex.Message });
-        }
+        return BadRequest(new { error = result.Error });
     }
-
 
 
     [HttpGet("confirmation")]

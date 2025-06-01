@@ -1,6 +1,7 @@
 ﻿namespace BlazorStripeExample.Interfaces;
 
+using BlazorStripeExample.Models.Responses;
 public interface IStripeService
 {
-    Task<string> CreateCheckoutSessionAsync(string billingInterval, string baseUrl);
+    Task<CheckoutSessionResponse> CreateCheckoutSessionAsync(string interval, string baseUrl);
 }

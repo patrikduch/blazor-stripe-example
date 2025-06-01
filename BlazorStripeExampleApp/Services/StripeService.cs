@@ -1,7 +1,9 @@
 ﻿namespace BlazorStripeExample.Services;
 
 using BlazorStripeExample.Interfaces;
+using BlazorStripeExample.Models.Responses;
 using BlazorStripeExample.Models.Settings;
+using Stripe;
 using Stripe.Checkout;
 
 public class StripeService : IStripeService
@@ -15,35 +17,39 @@ public class StripeService : IStripeService
         _logger = logger;
     }
 
-    public async Task<string> CreateCheckoutSessionAsync(string billingInterval, string baseUrl)
+    public async Task<CheckoutSessionResponse> CreateCheckoutSessionAsync(string interval, string baseUrl)
     {
-        var priceId = billingInterval.ToLower() switch
+        try
         {
-            "monthly" => _stripeSettings.BasicMonthlyPriceId,
-            "yearly" => _stripeSettings.BasicYearlyPriceId,
-            _ => throw new ArgumentException("Invalid billing interval. Use 'monthly' or 'yearly'.")
-        };
-
-        var options = new SessionCreateOptions
-        {
-            PaymentMethodTypes = new List<string> { "card" },
-            LineItems = new List<SessionLineItemOptions>
+            var priceId = interval.ToLower() switch
             {
-                new SessionLineItemOptions
-                {
-                    Price = priceId,
-                    Quantity = 1
-                }
-            },
-            Mode = "subscription",
-            SuccessUrl = $"{baseUrl}/success?session_id={{CHECKOUT_SESSION_ID}}",
-            CancelUrl = $"{baseUrl}/cancel"
-        };
+                "monthly" => _stripeSettings.BasicMonthlyPriceId,
+                "yearly" => _stripeSettings.BasicYearlyPriceId,
+                _ => throw new ArgumentException("Invalid billing interval.")
+            };
 
-        var service = new SessionService();
-        var session = await service.CreateAsync(options);
+            var session = await new SessionService().CreateAsync(new SessionCreateOptions
+            {
+                PaymentMethodTypes = new() { "card" },
+                LineItems = new() { new() { Price = priceId, Quantity = 1 } },
+                Mode = "subscription",
+                SuccessUrl = $"{baseUrl}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{baseUrl}/cancel"
+            });
 
-        _logger.LogInformation("Checkout session created with ID: {SessionId}", session.Id);
-        return session.Id;
+            return new CheckoutSessionResponse { Success = true, SessionId = session.Id };
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogError(ex, "Stripe error");
+            return new CheckoutSessionResponse { Success = false, Error = ex.Message };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error");
+            return new CheckoutSessionResponse { Success = false, Error = "Internal error: " + ex.Message };
+        }
     }
+
+
 }
