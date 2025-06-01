@@ -6,5 +6,5 @@ public interface IStripeService
 {
     Task<CheckoutSessionResponse> CreateCheckoutSessionAsync(string interval, string baseUrl);
 
-    Task<(bool Success, string? Error)> HandleWebhookAsync(string json, string signature, string endpointSecret);
+    Task<(bool Success, string? Error)> HandleWebhookAsync(string json, string signature);
 }

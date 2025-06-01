@@ -55,11 +55,11 @@ public class StripeService : IStripeService
         }
     }
 
-    public async Task<(bool Success, string? Error)> HandleWebhookAsync(string json, string signature, string endpointSecret)
+    public async Task<(bool Success, string? Error)> HandleWebhookAsync(string json, string signature)
     {
         try
         {
-            var stripeEvent = EventUtility.ConstructEvent(json, signature, endpointSecret);
+            var stripeEvent = EventUtility.ConstructEvent(json, signature, _stripeSettings.WebhookSecret);
             _logger.LogInformation("Received Stripe event: {EventType}", stripeEvent.Type);
 
             if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted &&
@@ -92,6 +92,4 @@ public class StripeService : IStripeService
             return (false, "Internal server error");
         }
     }
-
-
 }

@@ -11,16 +11,13 @@ using System.IO;
 [ApiController]
 public class StripeController : ControllerBase
 {
-    private readonly IConfiguration _configuration;
     private readonly IStripeService _stripeService;
     private readonly ISubscriptionService _subscriptionService;
 
     public StripeController(
-        IConfiguration configuration,
         IStripeService stripeService,
         ISubscriptionService subscriptionService)
     {
-        _configuration = configuration;
         _stripeService = stripeService;
         _subscriptionService = subscriptionService;
     }
@@ -66,9 +63,8 @@ public class StripeController : ControllerBase
     {
         var json = await new StreamReader(Request.Body).ReadToEndAsync();
         var signature = Request.Headers["Stripe-Signature"];
-        var endpointSecret = _configuration["Stripe:WebhookSecret"];
 
-        var (success, error) = await _stripeService.HandleWebhookAsync(json, signature, endpointSecret);
+        var (success, error) = await _stripeService.HandleWebhookAsync(json, signature);
 
         return success
             ? Ok()
