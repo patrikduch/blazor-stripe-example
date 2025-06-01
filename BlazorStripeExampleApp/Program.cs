@@ -2,9 +2,12 @@
 
 using BlazorStripeExample.Components;
 using BlazorStripeExample.Contexts;
+using BlazorStripeExample.Interfaces;
 using BlazorStripeExample.Models.Settings;
+using BlazorStripeExample.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 public class Program
@@ -15,6 +18,12 @@ public class Program
 
         // Add Stripe configuration from appsettings
         builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+        builder.Services.AddSingleton(sp =>
+            sp.GetRequiredService<IOptions<StripeSettings>>().Value);
+
+
+        builder.Services.AddScoped<IStripeService, StripeService>();
+
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
