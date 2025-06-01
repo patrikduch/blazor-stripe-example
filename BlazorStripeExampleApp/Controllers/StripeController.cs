@@ -5,6 +5,8 @@ using BlazorStripeExample.Entities;
 using BlazorStripeExample.Interfaces;
 using BlazorStripeExample.Models.Common.Responses;
 using BlazorStripeExample.Models.Stripe.Requests;
+using BlazorStripeExample.Models.Stripe.Responses;
+using BlazorStripeExample.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,25 +14,28 @@ using Stripe;
 using Stripe.Checkout;
 using System.IO;
 
-[Route("api/[controller]")]
+[Route("api/stripe")]
 [ApiController]
 public class StripeController : ControllerBase
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<StripeController> _logger;
     private readonly IStripeService _stripeService;
+    private readonly ISubscriptionService _subscriptionService;
     private readonly AppDbContext _db;
 
     public StripeController(
         IConfiguration configuration,
         ILogger<StripeController> logger,
         IStripeService stripeService,
+        ISubscriptionService subscriptionService,
         AppDbContext db)
     {
         _configuration = configuration;
         _logger = logger;
         _db = db;
         _stripeService = stripeService;
+        _subscriptionService = subscriptionService;
     }
 
     [HttpPost("create-checkout-session")]
@@ -49,32 +54,23 @@ public class StripeController : ControllerBase
 
 
     [HttpGet("confirmation")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaymentConfirmationResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
     public async Task<IActionResult> GetPaymentConfirmation([FromQuery] string sessionId)
     {
-        if (string.IsNullOrWhiteSpace(sessionId))
+        var (found, data, error) = await _subscriptionService.GetPaymentConfirmationAsync(sessionId);
+
+        if (!found)
         {
-            return BadRequest(new { message = "Session ID is required." });
+            if (error == "Session ID is required.")
+                return BadRequest(new ErrorResponse { Error = error });
+
+            return NotFound(new ErrorResponse { Error = error! });
         }
 
-        var payment = await _db.Payments.FirstOrDefaultAsync(p => p.SessionId == sessionId);
-
-        if (payment == null)
-        {
-            _logger.LogWarning("❌ No payment found for Session ID: {SessionId}", sessionId);
-            return NotFound(new { message = "Payment not found." });
-        }
-
-        _logger.LogInformation("✅ Payment found for Session ID: {SessionId}", sessionId);
-
-        return Ok(new
-        {
-            payment.SessionId,
-            payment.CustomerEmail,
-            Amount = payment.AmountTotal,
-            Currency = payment.Currency.ToUpper()
-        });
+        return Ok(data);
     }
-
 
     [HttpPost("webhook")]
     public async Task<IActionResult> StripeWebhook()

@@ -23,6 +23,7 @@ public class Program
 
 
         builder.Services.AddScoped<IStripeService, StripeService>();
+        builder.Services.AddScoped<ISubscriptionService, Services.SubscriptionService>();
 
 
         // Add services to the container.
