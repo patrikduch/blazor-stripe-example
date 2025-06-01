@@ -1,17 +1,10 @@
 ﻿namespace BlazorStripeExample.Controllers;
 
-using BlazorStripeExample.Contexts;
-using BlazorStripeExample.Entities;
 using BlazorStripeExample.Interfaces;
 using BlazorStripeExample.Models.Common.Responses;
 using BlazorStripeExample.Models.Stripe.Requests;
 using BlazorStripeExample.Models.Stripe.Responses;
-using BlazorStripeExample.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Stripe;
-using Stripe.Checkout;
 using System.IO;
 
 [Route("api/stripe")]
@@ -19,21 +12,15 @@ using System.IO;
 public class StripeController : ControllerBase
 {
     private readonly IConfiguration _configuration;
-    private readonly ILogger<StripeController> _logger;
     private readonly IStripeService _stripeService;
     private readonly ISubscriptionService _subscriptionService;
-    private readonly AppDbContext _db;
 
     public StripeController(
         IConfiguration configuration,
-        ILogger<StripeController> logger,
         IStripeService stripeService,
-        ISubscriptionService subscriptionService,
-        AppDbContext db)
+        ISubscriptionService subscriptionService)
     {
         _configuration = configuration;
-        _logger = logger;
-        _db = db;
         _stripeService = stripeService;
         _subscriptionService = subscriptionService;
     }
@@ -73,52 +60,18 @@ public class StripeController : ControllerBase
     }
 
     [HttpPost("webhook")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
     public async Task<IActionResult> StripeWebhook()
     {
-        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+        var json = await new StreamReader(Request.Body).ReadToEndAsync();
+        var signature = Request.Headers["Stripe-Signature"];
         var endpointSecret = _configuration["Stripe:WebhookSecret"];
 
-        try
-        {
-            var stripeEvent = EventUtility.ConstructEvent(
-                json,
-                Request.Headers["Stripe-Signature"],
-                endpointSecret
-            );
+        var (success, error) = await _stripeService.HandleWebhookAsync(json, signature, endpointSecret);
 
-            _logger.LogInformation("Received Stripe event of type: {EventType}", stripeEvent.Type);
-
- 
-            if (stripeEvent.Type == EventTypes.CheckoutSessionCompleted)
-            {
-                var session = stripeEvent.Data.Object as Session;
-
-                if (session != null)
-                {
-                    _logger.LogInformation("✅ Checkout session completed: {SessionId}", session.Id);
-
-                    long amount = (long)((session.AmountTotal ?? 0) / 100m);
-
-                    var payment = new Payment
-                    {
-                        SessionId = session.Id,
-                        CustomerEmail = session.CustomerDetails?.Email ?? "unknown",
-                        AmountTotal = amount,
-                        Currency = session.Currency ?? "usd"
-                    };
-
-                    _db.Payments.Add(payment);
-                    await _db.SaveChangesAsync();
-                }
-            }
-
-            return Ok();
-        }
-        catch (StripeException e)
-        {
-            _logger.LogWarning(e, "Stripe exception during webhook handling.");
-            return BadRequest();
-        }
+        return success
+            ? Ok()
+            : BadRequest(new ErrorResponse { Error = error ?? "Webhook processing failed." });
     }
-
 }
