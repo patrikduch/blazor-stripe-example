@@ -1,4 +1,5 @@
-﻿@inject IHttpClientFactory HttpClientFactory
+﻿@using BlazorStripeExample.Models.Stripe.Responses
+@inject IHttpClientFactory HttpClientFactory
 @inject IConfiguration Configuration
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -73,7 +74,7 @@ else
             var response = await client.PostAsJsonAsync($"{baseUri}api/stripe/create-checkout-session", payload);
             response.EnsureSuccessStatusCode();
 
-            var json = await response.Content.ReadFromJsonAsync<BlazorStripeExample.Models.Responses.StripeSessionResponse>();
+            var json = await response.Content.ReadFromJsonAsync<StripeSessionResponse>();
 
             if (!string.IsNullOrEmpty(json?.SessionId))
             {

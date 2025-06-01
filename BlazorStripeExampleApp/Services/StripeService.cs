@@ -1,8 +1,8 @@
 ﻿namespace BlazorStripeExample.Services;
 
 using BlazorStripeExample.Interfaces;
-using BlazorStripeExample.Models.Responses;
 using BlazorStripeExample.Models.Settings;
+using BlazorStripeExample.Models.Stripe.Responses;
 using Stripe;
 using Stripe.Checkout;
 

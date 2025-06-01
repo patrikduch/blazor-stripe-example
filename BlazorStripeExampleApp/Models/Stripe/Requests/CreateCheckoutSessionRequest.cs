@@ -1,4 +1,4 @@
-﻿namespace BlazorStripeExample.Models.Requests;
+﻿namespace BlazorStripeExample.Models.Stripe.Requests;
 
 public class CreateCheckoutSessionRequest
 {

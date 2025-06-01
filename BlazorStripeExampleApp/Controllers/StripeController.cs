@@ -3,7 +3,8 @@
 using BlazorStripeExample.Contexts;
 using BlazorStripeExample.Entities;
 using BlazorStripeExample.Interfaces;
-using BlazorStripeExample.Models.Requests;
+using BlazorStripeExample.Models.Common.Responses;
+using BlazorStripeExample.Models.Stripe.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ public class StripeController : ControllerBase
 
     [HttpPost("create-checkout-session")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(object))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(object))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
     public async Task<IActionResult> CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest dto)
     {
         var baseUrl = $"{Request.Scheme}://{Request.Host}";

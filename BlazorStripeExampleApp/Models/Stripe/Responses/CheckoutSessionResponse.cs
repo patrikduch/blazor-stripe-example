@@ -1,4 +1,4 @@
-﻿namespace BlazorStripeExample.Models.Responses;
+﻿namespace BlazorStripeExample.Models.Stripe.Responses;
 
 public class CheckoutSessionResponse
 {
